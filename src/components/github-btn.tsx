@@ -28,6 +28,7 @@ export default function GithubButton() {
 
   const onClick = async () => {
     try {
+      // GitHub 인증 제공자 인스턴스 생성
       const provider = new GithubAuthProvider();
 
       // 팝업창 형식

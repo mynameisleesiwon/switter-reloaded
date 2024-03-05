@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import LoadingScreen from "./components/loading-screen";
 import { auth } from "./firebase";
 import ProtectedRoute from "./components/protected-route";
+import FindPassword from "./routes/find-password";
 
 // 브라우저 라우터 생성
 // 어플리케이션의 라우트 구조 정의
@@ -40,6 +41,10 @@ const router = createBrowserRouter([
   {
     path: "/create-account",
     element: <CreateAccount />,
+  },
+  {
+    path: "/find-password",
+    element: <FindPassword />,
   },
 ]);
 
