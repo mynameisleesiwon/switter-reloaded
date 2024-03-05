@@ -1,8 +1,4 @@
-import {
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  updateProfile,
-} from "firebase/auth";
+import { sendPasswordResetEmail } from "firebase/auth";
 import React, { useState } from "react";
 
 import { auth } from "../firebase";
@@ -16,7 +12,6 @@ import {
   Title,
   Wrapper,
 } from "../components/auth-components";
-import GithubButton from "../components/github-btn";
 
 export default function FindPassword() {
   const navigate = useNavigate();
