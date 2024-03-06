@@ -113,10 +113,7 @@ export default function PostTweetForm() {
         // 'storage'에서 정의된 경로에 파일을 저장
         // 경로는 'tweets/유저 아이디-유저 닉네임/문서 아이디' 형식
         // 이렇게 하면 파일이 사용자와 트윗에 구체적으로 연관되어 정리
-        const locationRef = ref(
-          storage,
-          `tweets/${user.uid}-${user.displayName}/${doc.id}`
-        );
+        const locationRef = ref(storage, `tweets/${user.uid}/${doc.id}`);
 
         // 'uploadBytes' 함수를 이용해 생성된 참조 위치에 파일을 실제로 업로드
         const result = await uploadBytes(locationRef, file);
