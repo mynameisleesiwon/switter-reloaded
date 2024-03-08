@@ -3,16 +3,23 @@ import styled from "styled-components";
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   limit,
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
 } from "firebase/firestore";
 import { auth, db, storage } from "../firebase";
 import Tweet from "./tweet";
 import { Unsubscribe } from "firebase/auth";
-import { deleteObject, ref } from "firebase/storage";
+import {
+  deleteObject,
+  getDownloadURL,
+  ref,
+  uploadBytes,
+} from "firebase/storage";
 
 // ITweet 인터페이스는 트윗 데이터의 타입을 정의
 export interface ITweet {
@@ -27,6 +34,7 @@ export interface ITweet {
 
 export interface ITWeetForm extends ITweet {
   // 새로운 속성을 추가할 수 있습니다.
+  editingId: string | null;
   userId?: string | null;
   onDeleteTweet: (
     userId: string,
@@ -34,6 +42,22 @@ export interface ITWeetForm extends ITweet {
     id: string,
     photo?: string
   ) => void;
+  onEditTweet: (
+    editedTweet: string,
+    userId: string,
+    writerId: string,
+    id: string,
+    type: string,
+    photo?: string | null,
+    editedPhoto?: string | null,
+    file?: File | null
+  ) => void;
+}
+
+interface UpdatedData {
+  tweet: string;
+  updatedAt: number;
+  photo?: string | null; // `photo` 속성은 선택적(optional)
 }
 
 const Wrapper = styled.div`
@@ -46,6 +70,7 @@ export default function Timeline() {
   const user = auth.currentUser;
 
   const [tweets, setTweets] = useState<ITweet[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const onDeleteTweet = async (
     userId: string,
@@ -73,6 +98,72 @@ export default function Timeline() {
     } catch (e) {
       console.log(e);
     } finally {
+    }
+  };
+
+  const onEditTweet = async (
+    editedTweet: string,
+    userId: string,
+    writerId: string,
+    id: string,
+    type: string,
+    photo?: string | null,
+    editedPhoto?: string | null,
+    file?: File | null
+  ) => {
+    if (type === "back") {
+      setEditingId(null);
+      return;
+    }
+
+    if (editingId === id) {
+      const ok = confirm("Are you sure you want to edit this tweet?");
+
+      if (!ok || userId !== writerId) return;
+
+      try {
+        // 파이어스토어의 문서 참조
+        const tweetDocRef = doc(db, "tweets", id);
+
+        // 업데이트할 문서 데이터 초기화 (UpdatedData 타입을 사용)
+        const updatedData: Partial<UpdatedData> = {
+          tweet: editedTweet,
+          updatedAt: Date.now(),
+        };
+
+        // 사용자가 사진을 삭제하려는 경우
+
+        if (editedPhoto === undefined) {
+          // 기존 사진 URL이 있었다면 스토리지에서 해당 파일 삭제
+          if (photo) {
+            console.log(`tweets/${writerId}/${id}`);
+            const fileRef = ref(storage, `tweets/${writerId}/${id}`);
+            await deleteObject(fileRef);
+          }
+          // 문서 데이터에서 photo 프로퍼티 삭제
+          await updateDoc(tweetDocRef, {
+            photo: deleteField(),
+          });
+        }
+
+        // 새 파일이 첨부된 경우
+        if (file) {
+          const locationRef = ref(storage, `tweets/${writerId}/${id}`);
+          const result = await uploadBytes(locationRef, file);
+          const photoURL = await getDownloadURL(result.ref);
+          updatedData.photo = photoURL;
+        }
+
+        // 파이어스토어 문서 업데이트
+        await updateDoc(tweetDocRef, updatedData);
+
+        // 수정 상태 해제
+        setEditingId(null);
+      } catch (e) {
+        console.log(e);
+      }
+    } else {
+      setEditingId((prevId) => (prevId === id ? null : id));
     }
   };
 
@@ -132,8 +223,10 @@ export default function Timeline() {
         <Tweet
           key={tweet.id}
           {...tweet}
+          editingId={editingId}
           userId={user?.uid}
           onDeleteTweet={onDeleteTweet}
+          onEditTweet={onEditTweet}
         />
       ))}
     </Wrapper>
