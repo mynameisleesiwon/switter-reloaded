@@ -104,7 +104,7 @@ export default function PostTweetForm() {
         tweet, // 트윗 내용
         createdAt: Date.now(), // 현재 시간을 생성 시간으로 저장
         username: user.displayName || "Anonymous", // 사용자 이름이 없으면 'Anonymous'로 저장
-        userId: user.uid, // 사용자의 고유 ID를 저장
+        writerId: user.uid, // 사용자의 고유 ID를 저장
       });
 
       // 유저가 파일을 첨부 했는지 확인

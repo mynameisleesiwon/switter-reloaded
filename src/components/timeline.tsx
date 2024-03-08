@@ -2,14 +2,17 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 import {
   collection,
+  deleteDoc,
+  doc,
   limit,
   onSnapshot,
   orderBy,
   query,
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { auth, db, storage } from "../firebase";
 import Tweet from "./tweet";
 import { Unsubscribe } from "firebase/auth";
+import { deleteObject, ref } from "firebase/storage";
 
 // ITweet 인터페이스는 트윗 데이터의 타입을 정의
 export interface ITweet {
@@ -17,9 +20,20 @@ export interface ITweet {
   // photo? : 속성이 있어도 되고 없어도 됨
   photo?: string;
   tweet: string;
-  userId: string;
+  writerId: string;
   username: string;
   createdAt: number;
+}
+
+export interface ITWeetForm extends ITweet {
+  // 새로운 속성을 추가할 수 있습니다.
+  userId?: string | null;
+  onDeleteTweet: (
+    userId: string,
+    writerId: string,
+    id: string,
+    photo?: string
+  ) => void;
 }
 
 const Wrapper = styled.div`
@@ -29,7 +43,38 @@ const Wrapper = styled.div`
 `;
 
 export default function Timeline() {
+  const user = auth.currentUser;
+
   const [tweets, setTweets] = useState<ITweet[]>([]);
+
+  const onDeleteTweet = async (
+    userId: string,
+    writerId: string,
+    id: string,
+    photo?: string
+  ) => {
+    // confirm 함수는 확인을 누르면 true, 취소를 누르면 false를 반환
+    const ok = confirm("Are you sure you want to delete this tweet?");
+
+    // 사용자가 취소를 누르거나 현재 로그인한 사용자의 UID와 트윗을 작성한 사용자의 UID가 다르면 아무것도 하지 않고 함수를 종료
+    if (!ok || userId !== writerId) return;
+
+    try {
+      // 파이어베이스의 deleteDoc 함수를 이용하여 해당 트윗 문서를 삭제
+      await deleteDoc(doc(db, "tweets", id));
+
+      // 트윗에 사진이 첨부되어 있다면 해당 사진도 스토리지에서 삭제
+      if (photo) {
+        // photoRef 변수를 통해 파이어베이스 스토리지 내의 사진 경로를 참조
+        const photoRef = ref(storage, `tweets/${userId}/${id}`);
+        // deleteObject 함수를 이용하여 해당 사진을 스토리지에서 삭제
+        await deleteObject(photoRef);
+      }
+    } catch (e) {
+      console.log(e);
+    } finally {
+    }
+  };
 
   useEffect(() => {
     // 구독을 해제할 수 있는 변수를 선언
@@ -53,12 +98,12 @@ export default function Timeline() {
         // snapshot.docs를 맵핑하여 각 문서(doc)의 데이터를 추출하고
         // 필요한 정보만을 객체로 구성하여 새로운 tweets 배열을 만듬
         const tweets = snapshot.docs.map((doc) => {
-          const { tweet, createdAt, userId, username, photo } = doc.data();
+          const { tweet, createdAt, writerId, username, photo } = doc.data();
 
           return {
             tweet,
             createdAt,
-            userId,
+            writerId,
             username,
             photo,
             id: doc.id, // 문서의 고유 ID도 객체에 포함
@@ -84,7 +129,12 @@ export default function Timeline() {
   return (
     <Wrapper>
       {tweets.map((tweet) => (
-        <Tweet key={tweet.id} {...tweet} />
+        <Tweet
+          key={tweet.id}
+          {...tweet}
+          userId={user?.uid}
+          onDeleteTweet={onDeleteTweet}
+        />
       ))}
     </Wrapper>
   );
