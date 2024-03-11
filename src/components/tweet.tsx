@@ -169,12 +169,14 @@ export default function Tweet({
     if (editingId !== id) {
       setEditedTweet(tweet);
       setEditedPhoto(photo);
+      setFile(null);
     }
   }, [editingId]);
 
   useEffect(() => {
     setEditedTweet(tweet);
     setEditedPhoto(photo);
+    setFile(null);
   }, [tweet, photo]);
 
   return (
