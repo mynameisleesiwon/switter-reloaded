@@ -59,8 +59,38 @@ const AvatarInput = styled.input`
   display: none;
 `;
 
-const Name = styled.span`
-  font-size: 22px;
+const Name = styled.div``;
+
+const NameInput = styled.input`
+  padding: 10px 20px;
+  background-color: #4aa8d8;
+  color: white;
+  border-radius: 50px;
+  border: none;
+  font-size: 16px;
+  &[type="submit"] {
+    cursor: pointer;
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+  &::placeholder {
+    color: #d2d2d2;
+  }
+  margin-right: 10px;
+`;
+
+const NameChangeBtn = styled.button`
+  margin-right: 5px;
+  color: white;
+  font-weight: 500;
+  border: 0;
+  font-size: 12px;
+  padding: 5px 10px;
+  text-transform: uppercase;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #7c7c7c;
 `;
 
 const Tweets = styled.div`
@@ -75,6 +105,7 @@ export default function Profile() {
   const [avatar, setAvatar] = useState<any>(user?.photoURL);
   const [tweets, setTweets] = useState<ITweet[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [username, setUsername] = useState<any>(user?.displayName);
 
   const onAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { files } = e.target;
@@ -193,6 +224,33 @@ export default function Profile() {
     }
   };
 
+  const onChangeName = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const {
+      target: { value },
+    } = e;
+    setUsername(value);
+  };
+
+  const onEditName = async () => {
+    if (username !== "") {
+      const ok = confirm("Are you sure you want to edit this username?");
+
+      if (!ok || !user) return;
+
+      try {
+        // 유저 네임 변경
+        await updateProfile(user, {
+          displayName: username,
+        });
+        alert("Your username has changed!");
+      } catch (error) {
+        console.log(error);
+      }
+    } else {
+      alert("Please enter the username you wish to change.");
+    }
+  };
+
   const fetchTweets = async () => {
     const tweetQuery = query(
       collection(db, "tweets"),
@@ -249,7 +307,10 @@ export default function Profile() {
         type="file"
         accept="image/*"
       />
-      <Name>{user?.displayName ?? "Anonymous"}</Name>
+      <Name>
+        <NameInput value={username} onChange={onChangeName} type="text" />
+        <NameChangeBtn onClick={onEditName}>EDIT</NameChangeBtn>
+      </Name>
       <Tweets>
         {tweets.map((tweet) => (
           <Tweet
