@@ -1,8 +1,5 @@
 import styled from "styled-components";
 import { ITWeetForm } from "./timeline";
-import { auth, db, storage } from "../firebase";
-import { deleteDoc, doc } from "firebase/firestore";
-import { deleteObject, ref } from "firebase/storage";
 import { useEffect, useState } from "react";
 
 const Wrapper = styled.div`
